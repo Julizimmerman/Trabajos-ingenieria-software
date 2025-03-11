@@ -11,3 +11,4 @@ destinationP (Pal city _) = city -- Si no ponemos los paréntesis, el compilador
 
 netP :: Palet -> Int             -- responde el peso en toneladas del palet
 netP (Pal _ weight) = weight     -- Si no ponemos los paréntesis, el compilador piensa que Pal es una función y da error.
+
