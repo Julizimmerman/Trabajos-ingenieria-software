@@ -16,12 +16,12 @@ freeCellsS (Sta pallets capacity) = capacity - length pallets   -- Resta la cant
 
 stackS :: Stack -> Palet -> Stack         -- apila el palet indicado en la pila
 -- agregar el palet a la lista del stack y restarle 1 a capacity 
-stackS (Sta pallets capacity) palet | capacity > 0 = Sta (palet : pallets) capacity  -- Agrega el palet 
+stackS (Sta pallets capacity) palet | (capacity - length pallets) > 0 = Sta (palet : pallets) capacity  -- Agrega el palet 
                                     | otherwise    = error "La pila está llena, no se puede apilar más pallets"
 
 
-netS :: Stack -> Int                      -- responde el peso neto de los paletes en la pila
-netS (Sta pallets _) = sum (map netP pallets)  -- Suma los pesos de los palets
+netS :: Stack -> Int                           -- responde el peso neto de los paletes en la pila
+netS (Sta pallets _) = sum [netP p | p <- pallets]
 
 holdsS :: Stack -> Palet -> Route -> Bool -- indica si la pila puede aceptar el palet considerando las ciudades en la ruta
 -- necesito la ciudad del palet head y a esa compararla con la ciudad del palet que quiero agregar usando la funcion inOrderR
@@ -31,3 +31,4 @@ holdsS (Sta (headPalet : _) _) palet route = inOrderR route (destinationP palet)
 
 popS :: Stack -> String -> Stack          -- quita del tope los paletes con destino en la ciudad indicada
 popS (Sta pallets capacity) city = Sta (foldr (\x acc -> if destinationP x == city then acc else x : acc) [] pallets) capacity
+ 
