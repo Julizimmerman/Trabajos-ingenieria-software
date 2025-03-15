@@ -30,5 +30,7 @@ holdsS (Sta [] _) palet _ = True  -- Si la pila está vacía, se puede agregar c
 holdsS (Sta (headPalet : _) _) palet route = inOrderR route (destinationP palet) (destinationP headPalet)  -- Compara las ciudades de los palets
 
 popS :: Stack -> String -> Stack          -- quita del tope los paletes con destino en la ciudad indicada
-popS (Sta pallets capacity) city = Sta (foldr (\x acc -> if destinationP x == city then acc else x : acc) [] pallets) capacity
- 
+popS (Sta [] capacity) city = Sta [] capacity 
+popS (Sta (headP : pallets) capacity) city | destinationP headP == city = popS (Sta pallets capacity) city 
+                                           | otherwise = Sta (headP : pallets) capacity 
+
