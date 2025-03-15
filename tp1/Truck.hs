@@ -8,13 +8,23 @@ import Route
 data Truck = Tru [ Stack ] Route deriving (Eq, Show)
 
 newT :: Int -> Int -> Route -> Truck  -- construye un camion según una cantidad de bahias, la altura de las mismas y una ruta
-newT nStack capacity route = Tru [newS capacity | l <- [1..nStack]] newR route   
+newT nStack capacity route = Tru [newS capacity | l <- [1..nStack]] route     
 
 freeCellsT :: Truck -> Int            -- responde la celdas disponibles en el camion
 -- freeCellsT (Tru stacks _) = sum [freeCellsS s | s <- stacks]  
 freeCellsT (Tru stacks _) = foldr (\s fold -> freeCellsS s + fold) 0 stacks
 
 loadT :: Truck -> Palet -> Truck      -- carga un palet en el camion
+loadT (Tru stacks route) palet 
+                                | not (inRouteR route (destinationP palet)) = error "Este destino no se encuentra dentro de la ruta de este Truck" 
+                                | netT (Tru stacks route) == (10 * length stacks) = error "No se puede agregar más palets a este camion porque llegó a su peso limite" 
+                                | freeCellsT (Tru stacks route) == 0 = error "No se pueden agregar más palets a este camion porque no le quedan espacio a sus Stacks "
+                                
+loadT (Tru (headS : stacks) route) palet                                 
+                                | holdsS headS palet route && freeCellsS headS > 0 && netS headS + netP palet < 10 = Tru (stackS headS palet:stacks) route 
+                                | null stacks = error "No hay espacio en ningún stack para almacenar el palet"
+                                | otherwise = loadT (Tru stacks route) palet  
+
 
 unloadT :: Truck -> String -> Truck   -- responde un camion al que se le han descargado los paletes que podían descargarse en la ciudad
 unloadT (Tru stacks route) city = Tru [popS s city | s <- stacks] route 

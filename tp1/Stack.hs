@@ -24,8 +24,6 @@ netS :: Stack -> Int                           -- responde el peso neto de los p
 netS (Sta pallets _) = sum [netP p | p <- pallets]
 
 holdsS :: Stack -> Palet -> Route -> Bool -- indica si la pila puede aceptar el palet considerando las ciudades en la ruta
--- necesito la ciudad del palet head y a esa compararla con la ciudad del palet que quiero agregar usando la funcion inOrderR
--- si la ciudad del palet que quiero agregar viene antes que la ciudad del palet head, entonces puedo agregarlo
 holdsS (Sta [] _) palet _ = True  -- Si la pila está vacía, se puede agregar cualquier palet.
 holdsS (Sta (headPalet : _) _) palet route = inOrderR route (destinationP palet) (destinationP headPalet)  -- Compara las ciudades de los palets
 
