@@ -21,6 +21,7 @@ loadT (Tru stacks route) palet
                                 | freeCellsT (Tru stacks route) == 0 = error "No se pueden agregar más palets a este camion porque no le quedan espacio a sus Stacks "
                                 
 loadT (Tru (headS : stacks) route) palet                                 
+                                | netS headS == 10 = loadT (Tru stacks route) palet
                                 | holdsS headS palet route && freeCellsS headS > 0 && netS headS + netP palet < 10 = Tru (stackS headS palet:stacks) route 
                                 | null stacks = error "No hay espacio en ningún stack para almacenar el palet"
                                 | otherwise = loadT (Tru stacks route) palet  
