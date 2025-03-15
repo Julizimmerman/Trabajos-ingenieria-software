@@ -1,5 +1,5 @@
 
-module Route ( Route, newR, inOrderR )
+module Route ( Route, newR, inOrderR, inRouteR )
   where
 
 import Data.List (elemIndex)
@@ -13,3 +13,6 @@ inOrderR :: Route -> String -> String -> Bool  -- indica si la primer ciudad con
 inOrderR (Rou cities) city1 city2 = case (elemIndex city1 cities, elemIndex city2 cities) of
     (Just ix, Just iy) -> ix < iy   -- True if city1 comes before city2
     _ -> False                      -- False if either city is missing
+
+inRouteR :: Route -> String -> Bool -- indica si la ciudad consultada está en la ruta
+inRouteR (Rou cities) city = city `elem` cities
