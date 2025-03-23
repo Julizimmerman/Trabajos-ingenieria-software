@@ -10,15 +10,22 @@ newR :: [ String ] -> Route                    -- construye una ruta segun una l
 newR [] = error "La lista de ciudades no puede ser vacía"
 newR cities = Rou cities 
 
-inOrderR :: Route -> String -> String -> Bool  -- indica si la primer ciudad consultada esta antes que la segunda ciudad en la ruta
+--inOrderR :: Route -> String -> String -> Bool  -- indica si la primer ciudad consultada esta antes que la segunda ciudad en la ruta
 -- asumo que la lista dada en newR tiene a las ciudades en orden y me fijo cual viene primera de las dos que me pasan en esta funcion 
+--inOrderR (Rou cities) "" _ = error "La primera ciudad no puede ser vacía"
+--inOrderR (Rou cities) _ "" = error "La segunda ciudad no puede ser vacía"
+--inOrderR (Rou cities) city1 city2
+--  | Just ix <- elemIndex city1 cities, Just iy <- elemIndex city2 cities = ix < iy  -- True if city1 comes before city2
+--  | Nothing <- elemIndex city1 cities = error $ "La ciudad " ++ city1 ++ " no está en la ruta"
+--  | Nothing <- elemIndex city2 cities = error $ "La ciudad " ++ city2 ++ " no está en la ruta"
+inOrderR :: Route -> String -> String -> Bool
 inOrderR (Rou cities) "" _ = error "La primera ciudad no puede ser vacía"
 inOrderR (Rou cities) _ "" = error "La segunda ciudad no puede ser vacía"
-inOrderR (Rou cities) city1 city2
-  | Just ix <- elemIndex city1 cities, Just iy <- elemIndex city2 cities = ix < iy  -- True if city1 comes before city2
-  | Nothing <- elemIndex city1 cities = error $ "La ciudad " ++ city1 ++ " no está en la ruta"
-  | Nothing <- elemIndex city2 cities = error $ "La ciudad " ++ city2 ++ " no está en la ruta"
-
+inOrderR (Rou cities) city1 city2 = 
+  case (elemIndex city1 cities, elemIndex city2 cities) of
+    (Just ix, Just iy) -> ix < iy  -- True si city1 está antes que city2 en la lista
+    (Nothing, _) -> error $ "La ciudad " ++ city1 ++ " no está en la ruta"
+    (_, Nothing) -> error $ "La ciudad " ++ city2 ++ " no está en la ruta"
 
 inRouteR :: Route -> String -> Bool -- indica si la ciudad consultada está en la ruta
 inRouteR (Rou cities) city = city `elem` cities
