@@ -25,12 +25,9 @@ stackS (Sta pallets capacity) palet
     | otherwise 
     = error "No se puede apilar el palet"
 
---holdsS :: Stack -> Palet -> Route -> Bool -- indica si la pila puede aceptar el palet considerando las ciudades en la ruta
---holdsS (Sta [] _) palet _ = True  -- Si la pila está vacía, se puede agregar cualquier palet.
---holdsS (Sta (headPalet : _) _) palet route = inOrderR route (destinationP palet) (destinationP headPalet)  -- Compara las ciudades de los palets
-holdsS :: Stack -> Palet -> Bool
-holdsS (Sta [] _) _ = True  -- Si la pila está vacía, podemos apilar cualquier palet
-holdsS (Sta (headPalet : _) _) palet = destinationP palet == destinationP headPalet  -- Verifica el orden
+holdsS :: Stack -> Palet -> Route -> Bool -- indica si la pila puede aceptar el palet considerando las ciudades en la ruta
+holdsS (Sta [] _) palet _ = True  -- Si la pila está vacía, se puede agregar cualquier palet.
+holdsS (Sta (headPalet : _) _) palet route = inOrderR route (destinationP palet) (destinationP headPalet)  -- Compara las ciudades de los palets
 
 --popS :: Stack -> String -> Stack          -- quita del tope los paletes con destino en la ciudad indicada
 --popS (Sta [] capacity) city = Sta [] capacity 
