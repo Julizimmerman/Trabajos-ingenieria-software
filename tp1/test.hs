@@ -32,7 +32,7 @@ pPesado = newP "roma" 11
 stackVacio :: Stack
 stackVacio = newS 3 -- capacity = 3 
 stackCargado :: Stack
-stackCargado = stackS (stackS stackVacio pRoma) pParis
+stackCargado = stackS (stackS stackVacio pParis) pRoma
 
 camionBase :: Truck
 camionBase = newT 2 3 rTest
@@ -61,7 +61,7 @@ testStack = [
     freeCellsS stackVacio == 3,
     freeCellsS stackCargado == 1,
     netS stackCargado == 7,
-    holdsS stackCargado pMdq rTest, 
+    testF(holdsS stackCargado pMdq rTest), 
     testF (stackS stackVacio pPesado),   -- Exceso de peso
     netS (popS stackCargado "roma") == 4
     ]
