@@ -31,7 +31,7 @@ loadT (Tru stacks route) palet
     | freeCellsT (Tru stacks route) == 0 = error "No se pueden agregar más palets a este camion porque no le quedan espacios en sus Stacks"
     | otherwise = Tru (tryLoad stacks []) route
   where
-    tryLoad :: [Stack] -> [Stack] -> [Stack]
+    tryLoad :: [Stack] -> [Stack] -> [Stack] -- intenta cargar un palet en alguno de los stacks y devuelve la lista de stacks actualizada
     tryLoad [] _ = error "No hay espacio en ningún stack para almacenar el palet"
     tryLoad (s:ss) anteriores
         | holdsS s palet route && freeCellsS s > 0 && netS s + netP palet <= 10 =

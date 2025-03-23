@@ -15,8 +15,8 @@ freeCellsS (Sta pallets capacity) = capacity - length pallets   -- Resta la cant
 
 
 stackS :: Stack -> Palet -> Stack         -- apila el palet indicado en la pila
--- agregar el palet a la lista del stack y restarle 1 a capacity 
-stackS (Sta pallets capacity) palet | (capacity - length pallets) > 0 = Sta (palet : pallets) capacity  -- Agrega el palet 
+-- agregar el palet a la lista del stack solo si el Stack no supera su capacidad ni la suma de los pesos de sus palets superan las 10 toneladas. 
+stackS (Sta pallets capacity) palet | (capacity - length pallets) > 0 && netS (Sta pallets capacity) < 10 = Sta (palet : pallets) capacity  -- Agrega el palet 
                                     | otherwise    = error "La pila está llena, no se puede apilar más pallets"
 
 

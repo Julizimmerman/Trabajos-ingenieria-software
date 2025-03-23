@@ -6,13 +6,19 @@ import Data.List (elemIndex)
 data Route = Rou [ String ] deriving (Eq, Show)
 
 newR :: [ String ] -> Route                    -- construye una ruta segun una lista de ciudades
+-- me fijo que no me pasen una lista vacía y devuelvo la ruta con las ciudades en el orden que me pasaron
+newR [] = error "La lista de ciudades no puede ser vacía"
 newR cities = Rou cities 
 
 inOrderR :: Route -> String -> String -> Bool  -- indica si la primer ciudad consultada esta antes que la segunda ciudad en la ruta
 -- asumo que la lista dada en newR tiene a las ciudades en orden y me fijo cual viene primera de las dos que me pasan en esta funcion 
-inOrderR (Rou cities) city1 city2 = case (elemIndex city1 cities, elemIndex city2 cities) of
-    (Just ix, Just iy) -> ix < iy   -- True if city1 comes before city2
-    _ -> False                      -- False if either city is missing
+inOrderR (Rou cities) "" _ = error "La primera ciudad no puede ser vacía"
+inOrderR (Rou cities) _ "" = error "La segunda ciudad no puede ser vacía"
+inOrderR (Rou cities) city1 city2
+  | Just ix <- elemIndex city1 cities, Just iy <- elemIndex city2 cities = ix < iy  -- True if city1 comes before city2
+  | Nothing <- elemIndex city1 cities = error $ "La ciudad " ++ city1 ++ " no está en la ruta"
+  | Nothing <- elemIndex city2 cities = error $ "La ciudad " ++ city2 ++ " no está en la ruta"
+
 
 inRouteR :: Route -> String -> Bool -- indica si la ciudad consultada está en la ruta
 inRouteR (Rou cities) city = city `elem` cities
