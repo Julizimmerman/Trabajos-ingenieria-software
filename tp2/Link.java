@@ -22,7 +22,7 @@ public abstract class Link {
 }
 
 
-class NeutralLink extends Link {
+class NeutralLink extends Link { // actua de elemento neutro 
     // constructor:
     public NeutralLink() {
         super(null);
@@ -86,8 +86,8 @@ class NormalLink extends Link {
         return counter.peek().nextDecision(this.next);
     }
 
-    public Link nextDecision(Link fallback) {
-        return fallback; // si aún hay nodos, se retorna el siguiente
+    public Link nextDecision(Link nextLink) {
+        return nextLink; // si aún hay enlaces, se retorna el siguiente
     }
 
 }
