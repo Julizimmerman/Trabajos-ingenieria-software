@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
-class UnoServiceTest {
+public class UnoServiceTest {
 
     @Autowired
     private UnoService unoService;
@@ -41,7 +41,7 @@ class UnoServiceTest {
         matchId = unoService.newmatch(List.of(playerA, playerB));
     }
 
-    private List<Card> createTestDeck() {
+    public static List<Card> createTestDeck() {
         List<Card> deck = new ArrayList<>();
 
         // 1) Carta inicial de descarte
