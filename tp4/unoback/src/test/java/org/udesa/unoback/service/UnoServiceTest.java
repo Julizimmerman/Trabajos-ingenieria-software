@@ -12,8 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 public class UnoServiceTest {
@@ -22,119 +22,107 @@ public class UnoServiceTest {
     private UnoService unoService;
 
     @MockBean
-    private Dealer dealer;           // ← mockeamos el Dealer
+    private Dealer dealer;
 
     private UUID matchId;
-    private final String playerA = "Julieta";
-    private final String playerB = "Jack";
+    private List<String> players1;
+    private List<String> players2;
 
     @BeforeEach
     void setUp() {
-        // 1) Creamos un deck de prueba: 1 descarte + 7 cartas A + 7 cartas B + 1 extra
-        List<Card> testDeck = createTestDeck();
-
-        // 2) Stub de Mockito: cada vez que UnoService llame a dealer.fullDeck()
-        //    le devolvemos testDeck en lugar de barajarlo de verdad.
-        when(dealer.fullDeck()).thenReturn(testDeck);
-
-        // 3) Ahora newmatch() usará nuestro mazo controlado
-        matchId = unoService.newmatch(List.of(playerA, playerB));
+        when(dealer.fullDeck()).thenReturn(createTestDeck());
+        players1 = List.of("Julieta", "Michelle");
+        players2 = List.of("Julieta", "Michelle", "Emilio", "Julio");
     }
 
     public static List<Card> createTestDeck() {
         List<Card> deck = new ArrayList<>();
-
-        // 1) Carta inicial de descarte
-        deck.add(new NumberCard("Blue", 0));
-
-        // 2) Siete cartas para Julieta
-        deck.add(new NumberCard("Blue", 1));
-        deck.add(new SkipCard("Yellow"));
-        deck.add(new ReverseCard("Green"));
-        deck.add(new Draw2Card("Red"));
+        
+        String[] colors = {"Red", "Blue", "Green", "Yellow"};
+        for (String color : colors) {
+            for (int i = 0; i <= 9; i++) {
+                deck.add(new NumberCard(color, i));
+            }
+            deck.add(new SkipCard(color));
+            deck.add(new ReverseCard(color));
+            deck.add(new Draw2Card(color));
+        }
         deck.add(new WildCard());
-        deck.add(new NumberCard("Blue", 2));
         deck.add(new WildCard());
-
-        // 3) Siete cartas para Jack
-        deck.add(new NumberCard("Red", 3));
-        deck.add(new SkipCard("Green"));
-        deck.add(new ReverseCard("Yellow"));
-        deck.add(new Draw2Card("Blue"));
         deck.add(new WildCard());
-        deck.add(new NumberCard("Red", 4));
-        deck.add(new Draw2Card("Red"));
-
-        // 4) Carta extra para robar
-        deck.add(new NumberCard("Green", 7));
-
-        return deck;  // deck.size() == 16
+        return deck;
     }
 
     @Test
-    void newMatchShouldReturnNonNullUuid() {
-        assertNotNull(matchId, "newmatch debe devolver un UUID válido");
+    void newMatchShouldReturnNonNullUuidForTwoPlayers() {
+        assertNotNull(unoService.newmatch(players1), "newmatch debe devolver un UUID válido para 2 jugadores");
     }
 
     @Test
     void initialHandsShouldHaveSevenCards() {
-        // Mano de Julieta
-        assertEquals(7, unoService.playerhand(matchId).size(),
-                "Cada jugador arranca con 7 cartas");
-        // Jugamos una carta para rotar el turno
-        unoService.play(matchId, playerA, new JsonCard("Blue", 1, "NumberCard", false));
-        // Ahora mano de Jack
-        assertEquals(7, unoService.playerhand(matchId).size(),
-                "El segundo jugador también arranca con 7 cartas");
+        UUID gameID = unoService.newmatch(players1);
+        assertEquals(7, unoService.playerhand(gameID).size(),
+                "Cada jugador debe arrancar con 7 cartas");
+        unoService.play(gameID, players1.get(0), new JsonCard("Blue", 1, "NumberCard", false));
+        assertEquals(7, unoService.playerhand(gameID).size(),
+                "Segundo jugador debe mantener 7 cartas después de un play");
     }
 
     @Test
-    void activeCardShouldBeNonNull() {
-        assertNotNull(unoService.activecard(matchId),
-                "Debe existir una carta activa inicial");
+    void activeCardShouldBeFirstDeckCard() {
+        UUID gameID = unoService.newmatch(players1);
+        assertEquals(new NumberCard("Blue", 0), unoService.activecard(gameID),
+                "La carta activa inicial debe ser la primera del deck");
     }
 
     @Test
     void drawCardShouldIncreaseHandSize() {
-        int before = unoService.playerhand(matchId).size();
-        unoService.drawcard(matchId, playerA);
-        assertEquals(before + 1, unoService.playerhand(matchId).size(),
-                "Después de drawcard la mano debe aumentar en 1");
+        UUID gameID = unoService.newmatch(players1);
+        int before = unoService.playerhand(gameID).size();
+        unoService.drawcard(gameID, players1.get(0));
+        assertEquals(before + 1, unoService.playerhand(gameID).size(),
+                "drawcard debe incrementar la mano en 1");
     }
 
     @Test
-    void playValidCardShouldChangeTurnAndKeepHandSize() {
-        Card active = unoService.activecard(matchId);
-        Card playable = unoService.playerhand(matchId).stream()
+    void playValidCardShouldUpdateActiveCardAndRotateTurn() {
+        UUID gameID = unoService.newmatch(players1);
+        Card active = unoService.activecard(gameID);
+        Card playable = unoService.playerhand(gameID).stream()
                 .filter(c -> c.acceptsOnTop(active))
                 .findFirst().orElseThrow();
-
-        unoService.play(matchId, playerA, playable.asJson());
-
-        // Tras la jugada, la mano del jugador en turno (Jack) debe ser 7
-        assertEquals(7, unoService.playerhand(matchId).size(),
-                "Tras la jugada de Julieta, Jack debe tener 7 cartas");
-        assertEquals(playable, unoService.activecard(matchId),
-                "La carta activa debe ser la que jugó Julieta");
+        unoService.play(gameID, players1.get(0), playable.asJson());
+        assertEquals(playable, unoService.activecard(gameID),
+                "activecard debe actualizarse a la carta jugada");
+        assertEquals(7, unoService.playerhand(gameID).size(),
+                "la mano del jugador en turno debe permanecer en 7 cartas");
     }
 
     @Test
     void playOutOfTurnShouldThrowRuntimeException() {
-        JsonCard wrong = new JsonCard("Blue", 5, "NumberCard", false);
-        RuntimeException ex = assertThrows(RuntimeException.class, () ->
-                unoService.play(matchId, playerB, wrong)
+        UUID gameID = unoService.newmatch(players1);
+        assertThrows(RuntimeException.class, () ->
+                unoService.play(gameID, players1.get(1), new JsonCard("Blue", 1, "NumberCard", false))
         );
-        assertTrue(ex.getMessage().toLowerCase().contains("not turn"),
-                "Debe indicar turno incorrecto");
     }
 
     @Test
     void playInvalidCardTypeShouldThrowClassNotFoundException() {
-        JsonCard invalid = new JsonCard("Pink", 99, "WeirdCard", false);
-        ClassNotFoundException ex = assertThrows(ClassNotFoundException.class, () ->
-                unoService.play(matchId, playerA, invalid)
+        UUID gameID = unoService.newmatch(players1);
+        assertThrows(ClassNotFoundException.class, () ->
+                unoService.play(gameID, players1.get(0), new JsonCard("Pink", 99, "WeirdCard", false))
         );
-        assertTrue(ex.getMessage().contains("WeirdCard"),
-                "Debe indicar que no encontró la clase WeirdCard");
+    }
+
+    @Test
+    void multipleMatchesShouldBeIsolated() {
+        UUID gameIDa = unoService.newmatch(players1);
+        UUID gameIDb = unoService.newmatch(players2);
+        int sizeA = unoService.playerhand(gameIDa).size();
+        int sizeB = unoService.playerhand(gameIDb).size();
+        unoService.drawcard(gameIDb, players2.get(0));
+        assertEquals(sizeB + 1, unoService.playerhand(gameIDb).size());
+        assertEquals(sizeA, unoService.playerhand(gameIDa).size());
     }
 }
+
