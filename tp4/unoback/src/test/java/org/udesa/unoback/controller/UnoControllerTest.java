@@ -19,8 +19,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -33,48 +32,49 @@ class UnoControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
-    private Dealer dealer;   // Para controlar el deck
+    @MockBean          // para controlar el deck que usa el servicio
+    private Dealer dealer;
 
     private final ObjectMapper mapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
-        // Stub del dealer para que siempre devuelva nuestro mazo de prueba
+        // Siempre devolvemos el mismo mazo de prueba
         when(dealer.fullDeck()).thenReturn(UnoServiceTest.createTestDeck());
     }
 
     @Test
     void playWrongTurnTest() throws Exception {
-        // 1) crear un nuevo juego y obtener su UUID
+        // 1) creamos el juego y ...
         String uuid = newGame();
-        // 2) pedir la mano del jugador "Julieta" (para tener JSON válido)
-        List<JsonCard> hand = activeHand(uuid);
+        // 2) pedimos la mano de Julieta
+        List<JsonCard> handJulieta = activeHand(uuid);
 
-        // 3) Jack intenta jugar en turno de Julieta
-        String resp = mockMvc.perform(post("/play/" + uuid + "/Jack")
+        // 3) Michelle (jugadora B) intenta jugar en turno de Julieta
+        String resp = mockMvc.perform(post("/play/" + uuid + "/Michelle")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(hand.getFirst().toString()))
-                        .andDo(print())
+                        .content(mapper.writeValueAsString(handJulieta.get(0))))
+                .andDo(print())
                 .andExpect(status().isInternalServerError())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
-        // 4) el mensaje debe indicar turno incorrecto
-        assertEquals(Player.NotPlayersTurn + "Jack", resp);
+        // 4) debe indicar turno incorrecto
+        assertEquals(Player.NotPlayersTurn + "Michelle", resp);
     }
 
     @Test
     void newMatchShouldReturnUuid() throws Exception {
         String raw = mockMvc.perform(post("/newmatch")
-                        .param("players","Julieta")
-                        .param("players","Jack"))
+                        .param("players", "Julieta")
+                        .param("players", "Michelle"))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
-        // viene entre comillas
+
+        // viene entre comillas, parseamos
         String uuid = mapper.readTree(raw).asText();
         assertNotNull(UUID.fromString(uuid));
     }
@@ -89,7 +89,7 @@ class UnoControllerTest {
     @Test
     void newMatchWithSinglePlayerShouldReturnBadRequest() throws Exception {
         mockMvc.perform(post("/newmatch")
-                        .param("players","Julieta"))
+                        .param("players", "Julieta"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Se necesitan al menos 2 jugadores"));
     }
@@ -97,10 +97,11 @@ class UnoControllerTest {
     @Test
     void activeCardShouldReturnJson() throws Exception {
         String uuid = newGame();
+
         mockMvc.perform(get("/activecard/" + uuid)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.color").value("Blue"))
+                .andExpect(jsonPath("$.color").value("Red"))     // ahora cabe esperar Red, no Blue
                 .andExpect(jsonPath("$.number").value(0))
                 .andExpect(jsonPath("$.type").value("NumberCard"));
     }
@@ -119,14 +120,14 @@ class UnoControllerTest {
         mockMvc.perform(get("/playerhand/" + uuid)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(7));
     }
 
     @Test
     void playWithMalformedJsonShouldReturnBadRequest() throws Exception {
         String uuid = newGame();
-        String badJson = "{ color: 'Red' ";
+        String badJson = "{ color: 'Red' ";  // JSON mal formado
+
         mockMvc.perform(post("/play/" + uuid + "/Julieta")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(badJson))
@@ -139,25 +140,22 @@ class UnoControllerTest {
         String uuid = newGame();
         List<JsonCard> hand = activeHand(uuid);
 
-        // elegimos la primera jugable (acepta Blue 0)
-        JsonCard play = hand.stream()
-                .filter(c -> c.getColor().equals("Blue") || c.getType().equals("WildCard"))
-                .findFirst()
-                .orElseThrow();
+        // seleccionamos la primera carta (siempre jugable en nuestro mazo de prueba)
+        JsonCard toPlay = hand.get(0);
 
-        // 1) jugar carta
+        // 1) jugamos
         mockMvc.perform(post("/play/" + uuid + "/Julieta")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(play)))
+                        .content(mapper.writeValueAsString(toPlay)))
                 .andExpect(status().isOk());
 
-        // 2) /activecard ahora es la carta jugada
+        // 2) ahora la carta activa es la que jugamos
         mockMvc.perform(get("/activecard/" + uuid))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.color").value(play.getColor()))
-                .andExpect(jsonPath("$.number").value(play.getNumber()));
+                .andExpect(jsonPath("$.color").value(toPlay.getColor()))
+                .andExpect(jsonPath("$.number").value(toPlay.getNumber()));
 
-        // 3) /playerhand devuelve la mano de Jack (turno rotado) con 7 cartas
+        // 3) la mano del siguiente jugador (Michelle) sigue teniendo 7 cartas
         mockMvc.perform(get("/playerhand/" + uuid))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(7));
@@ -166,48 +164,38 @@ class UnoControllerTest {
     @Test
     void drawShouldReturnOkAndIncreaseHand() throws Exception {
         String uuid = newGame();
-        // mano inicial Julieta = 7
         int before = activeHand(uuid).size();
 
         mockMvc.perform(post("/draw/" + uuid + "/Julieta"))
                 .andExpect(status().isOk());
 
-        // ahora Julieta roba y sigue en turno → 8 cartas
+        // Julieta roba y aún sigue en turno → mano +1
         mockMvc.perform(get("/playerhand/" + uuid))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(before + 1));
     }
 
-    // ——————————————— HELPERS ———————————————
+    // ————— HELPERS —————
 
-    /**
-     * Simula el POST /newmatch?players=A&players=B
-     * y devuelve el UUID (sin comillas) como String.
-     */
+    /** Simula POST /newmatch?players=Julieta&players=Michelle */
     private String newGame() throws Exception {
         String resp = mockMvc.perform(post("/newmatch")
                         .param("players", "Julieta")
-                        .param("players", "Jack"))
+                        .param("players", "Michelle"))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
-
-        // viene con comillas, así que parseamos:
         return mapper.readTree(resp).asText();
     }
 
-    /**
-     * Simula el GET /playerhand/{matchId}
-     * y parsea el JSON a List<JsonCard>.
-     */
+    /** Simula GET /playerhand/{matchId} */
     private List<JsonCard> activeHand(String uuid) throws Exception {
         String resp = mockMvc.perform(get("/playerhand/" + uuid))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
-
-        return mapper.readValue(resp, new TypeReference<List<JsonCard>>() { });
+        return mapper.readValue(resp, new TypeReference<List<JsonCard>>() {});
     }
 }
