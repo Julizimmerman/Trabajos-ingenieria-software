@@ -11,18 +11,40 @@ import java.util.List;
 
 @Component
 public class Dealer {
-    public List<Card> fullDeck() {
-        ArrayList<Card> deck = new ArrayList<>() ;
-        // Generar cartas de cada color
-        deck.addAll(cardsOn("Red")) ;  // todas las rojas
-        deck.addAll(cardsOn("Blue")) ;  // todas las azules
-        deck.addAll(cardsOn("Green")) ;  // todas las verdes
-        deck.addAll(cardsOn("Yellow")) ;  // todas las amarillas
+        public List<Card> fullDeck() {
+        List<Card> deck = new ArrayList<>();
 
-        // Mezlcar las cartas
+        // Colores disponibles
+        String[] colors = {"Red", "Blue", "Green", "Yellow"};
+
+        // Para cada color: una carta 0, dos de cada 1-9, dos Skip, dos Reverse, dos Draw2
+        for (String color : colors) {
+            // Un 0
+            deck.add(new NumberCard(color, 0));
+            // Dos de cada número 1 a 9
+            for (int i = 1; i <= 9; i++) {
+                deck.add(new NumberCard(color, i));
+                deck.add(new NumberCard(color, i));
+            }
+            // Dos Skip
+            deck.add(new SkipCard(color));
+            deck.add(new SkipCard(color));
+            // Dos Reverse
+            deck.add(new ReverseCard(color));
+            deck.add(new ReverseCard(color));
+            // Dos Draw Two
+            deck.add(new Draw2Card(color));
+            deck.add(new Draw2Card(color));
+        }
+
+        // Cuatro Wild
+        for (int i = 0; i < 4; i++) {
+            deck.add(new WildCard());
+        }
+
+        // Mezclar aleatoriamente
         Collections.shuffle(deck);
-        return deck ;
-
+        return deck;
     }
 
     private List<Card> cardsOn(String color) {
